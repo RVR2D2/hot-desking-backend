@@ -1,60 +1,90 @@
-import {
-  BanUserDto,
-  CreateUserDto,
-  UserRole,
-  UserStatus,
-  ViewUserDto,
-} from './dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 
+import { UserStatus } from 'generated/prisma/enums';
+import { PrismaService } from 'src/prisma';
+import { BanUserDto, CreateUserDto, ViewUserDto } from './dto';
+import { mapUserRoleToDb, UserViewMapper } from './mappers';
+
+@Injectable()
 export class UsersService {
-  create(data: CreateUserDto): ViewUserDto {
-    return {
-      ...data,
-      id: randomUUID(),
-      status: UserStatus.Active,
-      createdAt: new Date(),
-      createdBy: randomUUID(),
-    };
+  private readonly mapper = new UserViewMapper();
+
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(data: CreateUserDto): Promise<ViewUserDto> {
+    const user = await this.prisma.user.create({
+      data: {
+        id: randomUUID(),
+        role: mapUserRoleToDb(data.role),
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        status: UserStatus.active,
+        createdAt: new Date(),
+        createdBy: randomUUID(),
+      },
+    });
+
+    return this.mapper.mapOne(user);
   }
 
-  get(): ViewUserDto[] {
-    return [];
+  async get(): Promise<ViewUserDto[]> {
+    const data = await this.prisma.user.findMany({});
+
+    return this.mapper.mapMany(data);
   }
 
-  getOne(id: string): ViewUserDto {
-    return {
-      id,
-      status: UserStatus.Active,
-      createdAt: new Date(),
-      createdBy: randomUUID(),
-      firstName: 'One',
-      lastName: 'Two',
-      email: 'one@example.com',
-      role: UserRole.User,
-    };
+  async getOne(id: string): Promise<ViewUserDto> {
+    const data = await this.prisma.user.findFirst({
+      where: { id },
+    });
+
+    if (!data) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.mapper.mapOne(data);
   }
 
-  update(id: string, data: CreateUserDto): ViewUserDto {
-    return {
-      ...data,
-      id,
-      status: UserStatus.Active,
-      createdAt: new Date(),
-      createdBy: randomUUID(),
-    };
+  async update(id: string, data: CreateUserDto): Promise<ViewUserDto> {
+    const user = await this.prisma.user.findFirst({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        role: mapUserRoleToDb(data.role),
+      },
+    });
+
+    return this.mapper.mapOne(updatedUser);
   }
 
-  ban(id: string, data: BanUserDto): ViewUserDto {
-    return {
-      id,
-      status: data.banned ? UserStatus.Banned : UserStatus.Active,
-      createdAt: new Date(),
-      createdBy: randomUUID(),
-      firstName: 'One',
-      lastName: 'Two',
-      email: 'one@example.com',
-      role: UserRole.User,
-    };
+  async ban(id: string, data: BanUserDto): Promise<ViewUserDto> {
+    const user = await this.prisma.user.findFirst({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        status: data.banned ? UserStatus.banned : UserStatus.active,
+      },
+    });
+
+    return this.mapper.mapOne(updatedUser);
   }
 }

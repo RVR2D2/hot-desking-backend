@@ -1,37 +1,40 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { BanUserDto, CreateUserDto, ViewUserDto } from './dto';
 import { IdParamDto } from './common';
+import { BanUserDto, CreateUserDto, ViewUserDto } from './dto';
+import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  create(@Body() data: CreateUserDto): ViewUserDto {
+  create(@Body() data: CreateUserDto): Promise<ViewUserDto> {
     return this.usersService.create(data);
   }
 
   @Get()
-  get(): ViewUserDto[] {
+  async get(): Promise<ViewUserDto[]> {
     return this.usersService.get();
   }
 
   @Get(':id')
-  getOne(@Param() { id }: IdParamDto): ViewUserDto {
+  async getOne(@Param() { id }: IdParamDto): Promise<ViewUserDto> {
     return this.usersService.getOne(id);
   }
 
   @Put(':id')
-  update(
+  async update(
     @Param() { id }: IdParamDto,
     @Body() data: CreateUserDto,
-  ): ViewUserDto {
+  ): Promise<ViewUserDto> {
     return this.usersService.update(id, data);
   }
 
   @Post(':id/ban')
-  ban(@Param() { id }: IdParamDto, @Body() data: BanUserDto): ViewUserDto {
+  async ban(
+    @Param() { id }: IdParamDto,
+    @Body() data: BanUserDto,
+  ): Promise<ViewUserDto> {
     return this.usersService.ban(id, data);
   }
 }
