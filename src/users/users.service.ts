@@ -1,18 +1,28 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 
 import { UserStatus } from 'generated/prisma/enums';
 import { PrismaService } from 'src/prisma';
 import { BanUserDto, CreateUserDto, ViewUserDto } from './dto';
 import { mapUserRoleToDb, UserViewMapper } from './mappers';
+import { PasswordResetService } from './password-reset.service';
 
 @Injectable()
 export class UsersService {
   private readonly mapper = new UserViewMapper();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly passwordResetService: PasswordResetService,
+  ) {}
 
   async create(data: CreateUserDto): Promise<ViewUserDto> {
+    await this.checkEmail(data.email);
+
     const user = await this.prisma.user.create({
       data: {
         id: randomUUID(),
@@ -25,6 +35,8 @@ export class UsersService {
         createdBy: randomUUID(),
       },
     });
+
+    await this.passwordResetService.createOrReplace(user.id, user.email);
 
     return this.mapper.mapOne(user);
   }
@@ -54,6 +66,10 @@ export class UsersService {
 
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+
+    if (user.email !== data.email) {
+      await this.checkEmail(data.email);
     }
 
     const updatedUser = await this.prisma.user.update({
@@ -86,5 +102,16 @@ export class UsersService {
     });
 
     return this.mapper.mapOne(updatedUser);
+  }
+
+  private async checkEmail(email: string): Promise<void> {
+    const user = await this.prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
+      select: { id: true },
+    });
+
+    if (user) {
+      throw new BadRequestException('Email already exists');
+    }
   }
 }

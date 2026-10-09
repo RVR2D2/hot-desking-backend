@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
-import { IdParamDto } from './common';
+import { IdParamDto } from '../common';
 import { BanUserDto, CreateUserDto, ViewUserDto } from './dto';
 import { UsersService } from './users.service';
 
