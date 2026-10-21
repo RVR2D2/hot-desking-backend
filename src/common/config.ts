@@ -7,6 +7,50 @@ const schema = convict({
     default: 3000,
     env: 'PORT',
   },
+  email: {
+    service: {
+      doc: 'Service type for email',
+      format: String,
+      default: 'gmail',
+      env: 'EMAIL_SERVICE',
+    },
+    auth: {
+      user: {
+        doc: 'Login for email',
+        format: String,
+        default: '',
+        env: 'EMAIL_USER',
+      },
+      pass: {
+        doc: 'Password for email',
+        format: String,
+        default: '',
+        env: 'EMAIL_PASSWORD',
+      },
+    },
+    hello: {
+      subject: {
+        doc: 'Subject for hello email',
+        format: String,
+        default: 'Hello from NestJS',
+        env: 'EMAIL_HELLO_SUBJECT',
+      },
+    },
+  },
+  frontend: {
+    baseUrl: {
+      doc: 'Frontend application base url',
+      format: String,
+      default: 'https://localhost:5000',
+      env: 'FRONTEND_URL',
+    },
+    confirmAccountUrl: {
+      doc: 'Frontend confirm account url',
+      format: String,
+      default: '/confirm',
+      env: 'FRONTEND_CONFIRM_URL',
+    },
+  },
   password: {
     code: {
       min: {

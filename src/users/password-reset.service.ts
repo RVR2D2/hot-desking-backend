@@ -3,21 +3,23 @@ import * as argon2 from 'argon2';
 import { randomInt } from 'crypto';
 import { config } from 'src/common';
 import { PrismaService } from 'src/prisma';
+import { PasswordResetCodeDTO } from './dto';
 
 @Injectable()
 export class PasswordResetService {
   constructor(private readonly prisma: PrismaService) {}
 
-  public async createOrReplace(userId: string, email: string): Promise<void> {
+  public async createOrReplace(userId: string): Promise<PasswordResetCodeDTO> {
     const code = this.generateCode();
     const hash = await argon2.hash(code);
+    const expiresAt = this.expiresAt();
 
     const data = {
       userId,
       attempts: 0,
       code: hash,
       createdAt: new Date(),
-      expiresAt: this.expiresAt(),
+      expiresAt,
     };
 
     await this.prisma.passwordReset.upsert({
@@ -26,7 +28,10 @@ export class PasswordResetService {
       update: data,
     });
 
-    console.warn(`Email sending to ${email}`);
+    return {
+      code,
+      expiresAt,
+    };
   }
 
   public async setPassword(

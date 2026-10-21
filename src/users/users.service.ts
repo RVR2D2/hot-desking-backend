@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 
 import { UserStatus } from 'generated/prisma/enums';
 import { PrismaService } from 'src/prisma';
+import { HelloEmailService } from '../email/hello-email.service';
 import { BanUserDto, CreateUserDto, ViewUserDto } from './dto';
 import { mapUserRoleToDb, UserViewMapper } from './mappers';
 import { PasswordResetService } from './password-reset.service';
@@ -18,6 +19,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly passwordResetService: PasswordResetService,
+    private readonly helloEmailService: HelloEmailService,
   ) {}
 
   async create(data: CreateUserDto): Promise<ViewUserDto> {
@@ -36,7 +38,12 @@ export class UsersService {
       },
     });
 
-    await this.passwordResetService.createOrReplace(user.id, user.email);
+    const reset = await this.passwordResetService.createOrReplace(user.id);
+    await this.helloEmailService.send({
+      ...reset,
+      email: user.email,
+      name: user.firstName,
+    });
 
     return this.mapper.mapOne(user);
   }
