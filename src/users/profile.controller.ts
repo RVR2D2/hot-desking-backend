@@ -5,8 +5,10 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { randomUUID } from 'crypto';
+import type { JWTUser } from 'src/auth/models';
+import { AccessGuard, User } from 'src/common';
 import { ResetPasswordDTO, SetPasswordDTO, ViewProfileDTO } from './dto';
 import { ProfileService } from './profile.service';
 
@@ -15,8 +17,9 @@ export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   @Get()
-  getProfile(): Promise<ViewProfileDTO> {
-    return this.profileService.getSelf(randomUUID());
+  @UseGuards(AccessGuard)
+  getProfile(@User() user: JWTUser): Promise<ViewProfileDTO> {
+    return this.profileService.getSelf(user.userId);
   }
 
   @Post('reset')
