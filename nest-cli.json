@@ -9,6 +9,16 @@
         "include": "**/*.hbs",
         "outDir": "dist/src"
       }
+    ],
+    "plugins": [
+      {
+        "name": "@nestjs/swagger",
+        "options": {
+          "classValidatorShim": true,
+          "introspectComments": true,
+          "skipAutoHttpCode": false
+        }
+      }
     ]
   }
 }
